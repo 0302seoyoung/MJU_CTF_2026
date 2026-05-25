@@ -1,0 +1,234 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    background: #6b8cff;
+    color: #fff;
+    font-family: 'Press Start 2P', 'Courier New', monospace;
+    overflow: hidden;
+}
+
+img { image-rendering: pixelated; image-rendering: crisp-edges; }
+
+#hud {
+    position: fixed;
+    top: 8px;
+    left: 8px;
+    z-index: 10;
+    background: #000;
+    border: 3px solid #fff;
+    padding: 8px 14px;
+    font-size: 10px;
+    display: flex;
+    gap: 16px;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+#hud b { color: #ffd700; }
+
+#renamePanel {
+    position: fixed;
+    top: 8px;
+    right: 8px;
+    z-index: 10;
+    background: #000;
+    border: 3px solid #fff;
+    padding: 6px 10px;
+    display: flex;
+    gap: 6px;
+    font-family: 'Press Start 2P', 'Courier New', monospace;
+    font-size: 10px;
+}
+#renameInput {
+    background: #fff;
+    color: #000;
+    border: 2px solid #fff;
+    padding: 4px 8px;
+    font-family: inherit;
+    font-size: 10px;
+    width: 240px;
+}
+#renameBtn {
+    background: #e63946;
+    color: #fff;
+    border: 2px solid #fff;
+    padding: 4px 10px;
+    font-family: inherit;
+    font-size: 10px;
+    cursor: pointer;
+}
+#renameBtn:hover { background: #ff5566; }
+
+#game {
+    width: 100vw;
+    height: 100vh;
+}
+
+/* ============ START SCREEN — Mario NES Style ============ */
+#startScreen {
+    position: fixed;
+    inset: 0;
+    background:
+        linear-gradient(180deg, #6b8cff 0%, #6b8cff 60%, #c84d24 60%, #c84d24 100%);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 28px;
+    overflow: hidden;
+}
+.title-row {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+}
+.title-mario {
+    width: 96px;
+    height: 96px;
+}
+#startScreen h1 {
+    font-family: 'Press Start 2P', monospace;
+    color: #ffcc00;
+    text-shadow:
+        4px 4px 0 #000,
+        -2px -2px 0 #c84d24,
+        2px -2px 0 #c84d24,
+        -2px 2px 0 #c84d24,
+        2px 2px 0 #c84d24;
+    font-size: 40px;
+    text-align: center;
+    line-height: 1.5;
+    letter-spacing: 2px;
+}
+.subtitle {
+    font-family: 'Press Start 2P', monospace;
+    text-align: center;
+    color: #fff;
+    text-shadow: 3px 3px 0 #000;
+    font-size: 12px;
+    line-height: 1.8;
+}
+#startScreen input {
+    padding: 14px 18px;
+    font-size: 16px;
+    background: #fff;
+    color: #000;
+    border: 4px solid #000;
+    border-radius: 0;
+    font-family: 'Press Start 2P', monospace;
+    text-align: center;
+    box-shadow: 4px 4px 0 #000;
+    min-width: 280px;
+}
+#startScreen button {
+    padding: 16px 32px;
+    font-size: 18px;
+    background: #e63946;
+    color: #fff;
+    border: 4px solid #000;
+    border-radius: 0;
+    cursor: pointer;
+    font-family: 'Press Start 2P', monospace;
+    box-shadow: 6px 6px 0 #000;
+    transition: transform 0.05s, box-shadow 0.05s;
+    text-shadow: 2px 2px 0 #000;
+}
+#startScreen button:hover { background: #ff5566; }
+#startScreen button:active {
+    transform: translate(4px, 4px);
+    box-shadow: 2px 2px 0 #000;
+}
+.copy {
+    font-family: 'Press Start 2P', monospace;
+    color: #fff;
+    text-shadow: 2px 2px 0 #000;
+    font-size: 9px;
+    margin-top: 12px;
+}
+
+/* ============ DEATH OVERLAY ============ */
+#deathOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+}
+#deathOverlay .death-card {
+    background: #fff;
+    color: #000;
+    border: 6px solid #000;
+    padding: 28px 36px;
+    text-align: center;
+    min-width: 360px;
+    box-shadow: 8px 8px 0 #000;
+    font-family: 'Press Start 2P', monospace;
+}
+#deathOverlay h1 {
+    color: #e63946;
+    font-size: 18px;
+    margin-bottom: 8px;
+    text-shadow: 2px 2px 0 #000;
+}
+.death-stats {
+    margin-top: 18px;
+    padding: 12px 18px;
+    background: #000;
+    border: 2px solid #fff;
+    font-family: 'Press Start 2P', 'Courier New', monospace;
+    font-size: 11px;
+    line-height: 1.8;
+    text-align: left;
+    word-break: break-all;
+}
+.death-stats .stat-line { padding: 2px 0; }
+.death-stats .stat-line.ok    { color: #00ff66; }   /* 통과 — 녹색 */
+.death-stats .stat-line.fail  { color: #ff4455; }   /* 미통과 — 빨강 */
+.death-stats .name-line       { color: #ffcc00; }   /* 닉네임 — 노랑 */
+#deathOverlay p { font-size: 11px; }
+#respawnBtn, #winOverlay button {
+    padding: 14px 28px;
+    font-size: 14px;
+    background: #e63946;
+    color: #fff;
+    border: 4px solid #000;
+    cursor: pointer;
+    font-family: 'Press Start 2P', monospace;
+    box-shadow: 5px 5px 0 #000;
+    text-shadow: 2px 2px 0 #000;
+}
+
+/* ============ WIN OVERLAY ============ */
+#winOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 80, 0, 0.95);
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+}
+#winOverlay h1 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 48px;
+    color: #ffcc00;
+    text-shadow: 4px 4px 0 #000;
+    letter-spacing: 4px;
+}
+#flagBox {
+    background: #000;
+    color: #00ff00;
+    padding: 24px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 14px;
+    border: 4px solid #fff;
+}
+
+.hidden { display: none !important; }

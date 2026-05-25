@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>Super MJSEC - The Rage Game</title>
+
+<!-- Open Graph (카카오/페북/슬랙 썸네일) -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="🐱 Super MJSEC - The Rage Game">
+<meta property="og:description" content="마리오풍 빡침 플랫포머 CTF. 9000px 골에 도달해서 플래그를 받아보세요. (피지컬 풀이 비추)">
+<meta property="og:image" content="/assets/thumbnail.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="🐱 Super MJSEC - The Rage Game">
+<meta name="twitter:description" content="마리오풍 빡침 플랫포머 CTF. 9000px 골 도달 시 플래그 발급.">
+<meta name="twitter:image" content="/assets/thumbnail.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+<script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
+</head>
+<body>
+<div id="hud">
+  <span>x: <b id="hudX">0</b> / 9000</span>
+  <span>deaths: <b id="hudDeaths">0</b></span>
+  <span>name: <b id="hudName">user</b></span>
+</div>
+
+<div id="renamePanel">
+  <input id="renameInput" placeholder="change name" maxlength="500">
+  <button id="renameBtn">SET</button>
+</div>
+
+<div id="startScreen">
+  <div class="title-row">
+    <img src="/assets/mario/Mario_Small_Jump.png" class="title-mario">
+    <h1>SUPER<br>MJSEC</h1>
+    <img src="/assets/mario/Mario_Small_Run1.png" class="title-mario">
+  </div>
+  <p class="subtitle">닉네임을 입력하고 START !<br>WASD / 화살표 / Space</p>
+  <input id="nameInput" placeholder="user" maxlength="500" value="user">
+  <button id="startBtn">▶ START</button>
+  <p class="copy">© MJSEC 2026 CTF - C# Edition</p>
+</div>
+
+<div id="game"></div>
+
+<div id="deathOverlay" class="hidden">
+  <div id="deathContent"></div>
+  <button id="respawnBtn">RESPAWN</button>
+</div>
+
+<div id="winOverlay" class="hidden">
+  <h1>YOU WIN!</h1>
+  <pre id="flagBox"></pre>
+  <button onclick="location.reload()">PLAY AGAIN</button>
+</div>
+
+<script src="/game.js"></script>
+</body>
+</html>

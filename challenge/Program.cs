@@ -356,7 +356,7 @@ app.MapPost("/api/move", async (HttpContext ctx) =>
         return Results.Json(new {
             ok = true,
             flag_part1 = FLAG_PART1,
-            hint = "this is only half. find the second half elsewhere."
+            hint = "이건 절반이야. 나머지 반은 다른 곳에서 찾아라."
         });
     }
     return Results.Json(new { ok = true });

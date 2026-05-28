@@ -100,12 +100,13 @@ const TRAP_LAYOUT = {
     ],
     mystery_block: [
         [400, 440], [1300, 440], [2200, 440], [3100, 440], [4000, 440],
-        [4900, 440], [5800, 440], [6700, 440], [7600, 440],
+        [4900, 440], [5800, 440], [6700, 440], [7300, 440], [7600, 440], [7900, 440],
     ],
     koopa: [
-        [1400, 540], [3500, 540], [5500, 540], [7400, 540],
+        [1400, 540], [3500, 540], [5500, 540], [7400, 540], [7700, 540],
     ],
-    crazy_goomba: [[1000, 540], [4000, 540]],   // origin 4500→4000으로 (8000 이상 안 침범)
+    // [x, y, range] — range 생략 시 3500
+    crazy_goomba: [[1000, 540], [4000, 540], [7500, 540, 500]],
     // 사라지는 바닥 — 일반 바닥처럼 보이지만 밟으면 사라져서 추락
     disappearing_floor: [
         [2450, 580], [4550, 580], [6300, 580],
@@ -113,7 +114,7 @@ const TRAP_LAYOUT = {
     // 대포 — 주기적으로 포탄 발사
     cannon: [
         // mystery_block(400/1300/2200/3100/4000/4900/5800/6700/7600)와 겹치지 않게 배치
-        [1800, 540], [4500, 540], [7000, 540],
+        [1800, 540], [4500, 540], [7000, 540], [7500, 540],
     ],
     false_goal: [],   // 제거 — 진짜 골 도달 방해 X
 };
@@ -313,8 +314,10 @@ function create() {
         k.setData("isKoopa", true);
         k.body.velocity.x = -50;
     }
-    // 미친 굼바 — 빨강 + 중간 사이즈(점프 통과 가능) + 화면 횡단 (속도 280)
-    for (const [x, y] of TRAP_LAYOUT.crazy_goomba) {
+    // 미친/화난 굼바 — 빨강 + 중간 사이즈, range는 per-instance 지원 ([x, y, range])
+    for (const entry of TRAP_LAYOUT.crazy_goomba) {
+        const x = entry[0], y = entry[1];
+        const range = entry.length >= 3 ? entry[2] : 3500;
         const c = goombas.create(x, 530, 'spikes_img');
         c.setDisplaySize(44, 44);
         c.body.setSize(14, 14).setOffset(1, 1);
@@ -323,7 +326,7 @@ function create() {
         c.setData("trapX", x);
         c.setData("trapY", y);
         c.setData("origin", x);
-        c.setData("range", 3500);  // 8000+ 안 침범 (origin 4000 → 500~7500)
+        c.setData("range", range);
         c.setData("speed", 280);
         c.body.velocity.x = -280;
     }

@@ -34,7 +34,7 @@ const hudDeaths = document.getElementById("hudDeaths");
 const hudName = document.getElementById("hudName");
 
 startBtn.onclick = async () => {
-    const name = nameInput.value || "user";
+    const name = "user";
     const r = await fetch("/api/start", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
@@ -75,6 +75,31 @@ renameInput.addEventListener("keydown", (e) => {
     e.stopPropagation();             // ★ 게임 입력으로 새는 거 방지
     if (e.key === "Enter") doRename();
 });
+
+// admin 권한 감지 + rename 패널 / HUD name 표시 토글
+const renamePanel = document.getElementById("renamePanel");
+const hudNameWrap = document.getElementById("hudNameWrap");
+function checkAdminAndTogglePanel() {
+    let role = "user";
+    try {
+        const m = document.cookie.match(/prefs=([^;]+)/);
+        if (m) {
+            const decoded = atob(decodeURIComponent(m[1]));
+            const obj = JSON.parse(decoded);
+            role = obj.role || "user";
+        }
+    } catch (e) {}
+    if (role === "admin") {
+        renamePanel.classList.remove("hidden");
+        if (hudNameWrap) hudNameWrap.style.display = "";
+    } else {
+        renamePanel.classList.add("hidden");
+        if (hudNameWrap) hudNameWrap.style.display = "none";
+    }
+}
+// 초기 1회 + 2초마다 폴링 (쿠키 변조 후 자동 반영)
+checkAdminAndTogglePanel();
+setInterval(checkAdminAndTogglePanel, 2000);
 
 // ============== Trap layout (클라이언트 표시용; 서버에도 동일) ==============
 const TRAP_LAYOUT = {

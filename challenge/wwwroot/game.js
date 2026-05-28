@@ -34,7 +34,11 @@ const hudDeaths = document.getElementById("hudDeaths");
 const hudName = document.getElementById("hudName");
 
 startBtn.onclick = async () => {
-    const name = "user";
+    const nameInput = document.getElementById("nameInput");
+    const adminInputs = document.getElementById("adminInputs");
+    // admin일 때만 nameInput이 visible → 그때만 그 값 사용
+    const useInput = nameInput && adminInputs && !adminInputs.classList.contains("hidden");
+    const name = useInput ? (nameInput.value || "user") : "user";
     const r = await fetch("/api/start", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
@@ -76,7 +80,7 @@ renameInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") doRename();
 });
 
-// admin 권한 감지 + rename 패널 / HUD name 표시 토글
+// admin 권한 감지 + 관련 UI 토글 (rename 패널, HUD name, 시작화면 nameInput)
 const renamePanel = document.getElementById("renamePanel");
 const hudNameWrap = document.getElementById("hudNameWrap");
 function checkAdminAndTogglePanel() {
@@ -89,12 +93,15 @@ function checkAdminAndTogglePanel() {
             role = obj.role || "user";
         }
     } catch (e) {}
+    const adminInputs = document.getElementById("adminInputs");
     if (role === "admin") {
         renamePanel.classList.remove("hidden");
         if (hudNameWrap) hudNameWrap.style.display = "";
+        if (adminInputs) adminInputs.classList.remove("hidden");
     } else {
         renamePanel.classList.add("hidden");
         if (hudNameWrap) hudNameWrap.style.display = "none";
+        if (adminInputs) adminInputs.classList.add("hidden");
     }
 }
 // 초기 1회 + 2초마다 폴링 (쿠키 변조 후 자동 반영)

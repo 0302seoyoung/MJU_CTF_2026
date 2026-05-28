@@ -221,7 +221,13 @@ app.MapPost("/api/start", async (HttpContext ctx) =>
     // 닉네임 필터링 없이 저장 ← SSTI 진입점 (의도된 취약점)
     ResetGame(ctx, name);
 
-    // prefs 쿠키 발급 — base64 평문 JSON, 서명 없음 (의도된 변조 취약점)
+    // prefs 쿠키 발급 — 이미 있으면 안 덮어씀 (변조한 admin 권한 유지)
+    if (ctx.Request.Cookies.ContainsKey("prefs"))
+    {
+        return Results.Json(new { ok = true, goal_x = GOAL_X });
+    }
+
+    // 첫 방문 시에만 user 쿠키 발급 (의도된 변조 취약점)
     var defaultPrefs = "{\"role\":\"user\",\"theme\":\"mario\"}";
     var prefsB64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(defaultPrefs));
     ctx.Response.Cookies.Append("prefs", prefsB64,

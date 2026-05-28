@@ -862,26 +862,34 @@ async function startGoalSequence() {
     scene.time.delayedCall(400, () => spawnFireworks(GOAL_X + 150, 380));
     scene.time.delayedCall(800, () => spawnFireworks(GOAL_X + 250, 350));
 
-    // 4. 서버 호출 → flag
-    const sigR = await fetch('/api/sign', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({x: GOAL_X, y: 540})
-    });
+    // 4. 서버 호출 → flag (현재 위치부터 9000까지 100px씩 walk)
     let flag = null, errMsg = null;
-    if (sigR.ok) {
-        const { sig } = await sigR.json();
-        const moveR = await fetch('/api/move', {
+    let cx = (await fetch('/api/state').then(r => r.json())).x;
+    while (cx < GOAL_X) {
+        const nx = Math.min(cx + 100, GOAL_X);
+        const sr = await fetch('/api/sign', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({x: nx, y: 540})
+        });
+        if (!sr.ok) {
+            const d = await sr.json().catch(() => ({error: 'sign refused'}));
+            errMsg = (d.hint || d.error || 'sign fail') + ` @ x=${nx}`;
+            break;
+        }
+        const { sig } = await sr.json();
+        const mr = await fetch('/api/move', {
             method: 'POST',
             headers: {'Content-Type': 'application/json', 'X-Signature': sig},
-            body: JSON.stringify({x: GOAL_X, y: 540})
+            body: JSON.stringify({x: nx, y: 540})
         });
-        const data = await moveR.json();
-        if (data.flag) flag = data.flag;
-        else errMsg = data.error || 'unknown';
-    } else {
-        const data = await sigR.json().catch(() => ({error: 'sign refused'}));
-        errMsg = data.error + (data.hint ? ` (${data.hint})` : '');
+        const data = await mr.json();
+        if (data.flag) { flag = data.flag; break; }
+        if (!data.ok) {
+            errMsg = (data.hint || data.error || 'move fail') + ` @ x=${nx}`;
+            break;
+        }
+        cx = nx;
     }
 
     await sleep(2000);   // 폭죽 보고

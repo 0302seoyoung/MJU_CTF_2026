@@ -724,11 +724,7 @@ async function sendMove(x, y) {
             gameState.cleared = true;
             if (window.bgm) window.bgm.stop();
             if (window.clearBgm) window.clearBgm.play();
-            if (data.flag_part1) {
-                flagBox.textContent = `[PART 1]\n${data.flag_part1}\n\n${data.hint || ''}`;
-            } else {
-                flagBox.textContent = data.flag;
-            }
+            flagBox.textContent = data.flag || data.flag_part1;
             winOverlay.classList.remove("hidden");
         }
     } catch (e) { /* network blip */ }
@@ -891,7 +887,7 @@ async function startGoalSequence() {
         });
         const data = await mr.json();
         if (data.flag) { flag = data.flag; break; }
-        if (data.flag_part1) { flag = `[PART 1]\n${data.flag_part1}\n\n${data.hint || ''}`; break; }
+        if (data.flag_part1) { flag = data.flag_part1; break; }
         if (!data.ok) {
             errMsg = (data.hint || data.error || 'move fail') + ` @ x=${nx}`;
             break;

@@ -361,8 +361,7 @@ app.MapPost("/api/move", async (HttpContext ctx) =>
         Console.Error.Flush();
         return Results.Json(new {
             ok = true,
-            flag_part1 = FLAG_PART1,
-            hint = "이건 절반이야. 나머지 반은 다른 곳에서 찾아라."
+            flag_part1 = FLAG_PART1
         });
     }
     return Results.Json(new { ok = true });

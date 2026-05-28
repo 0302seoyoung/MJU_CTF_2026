@@ -363,11 +363,8 @@ app.MapPost("/api/death", async (HttpContext ctx) =>
     // 'no recent activity' 체크 제거 — 멍 때리다 죽어도 사망 인정
     // (anti-bot은 사망 간 이동 횟수 + 트랩 근접 + 트랩 타입 화이트리스트로 충분)
 
-    // 사망 간 이동 2회 이상 (봇 스팸만 차단, 일반 빡침 플레이엔 영향 X)
+    // die_slower 규칙 제거 — 빡침 게임 특성상 즉사 빈번 (trap_proximity로 anti-bot 충분)
     var moveCountNow = ctx.Session.GetInt32("move_count") ?? 0;
-    var lastDeathMove = ctx.Session.GetInt32("last_death_move") ?? -10;
-    if (moveCountNow - lastDeathMove < 2)
-        return Results.Json(new { error = "die slower (need 2 moves between deaths)" }, statusCode: 403);
 
     // 트랩 근접 이력 검증 — 최근 1.5초 안에 해당 트랩 종류의 x좌표 80px 안을 지나갔어야
     if (TRAP_LOCATIONS.TryGetValue(body.Trap, out var trapList))

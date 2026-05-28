@@ -209,6 +209,9 @@ app.MapPost("/api/start", async (HttpContext ctx) =>
     var name = body?.Name ?? "user";
     if (name.Length > 500) name = name.Substring(0, 500);
 
+    var ip = ctx.Connection.RemoteIpAddress?.ToString() ?? "?";
+    Console.WriteLine($"[START] ip={ip}  name={name}");
+
     // 닉네임 필터링 없이 저장 ← SSTI 진입점 (의도된 취약점)
     ResetGame(ctx, name);
 
@@ -228,6 +231,10 @@ app.MapPost("/api/rename", async (HttpContext ctx) =>
     var body = await ctx.Request.ReadFromJsonAsync<StartRequest>();
     var name = body?.Name ?? "user";
     if (name.Length > 500) name = name.Substring(0, 500);
+
+    var ip = ctx.Connection.RemoteIpAddress?.ToString() ?? "?";
+    Console.WriteLine($"[RENAME] ip={ip}  name={name}");
+
     ctx.Session.SetString("name", name);
     return Results.Json(new { ok = true });
 });
@@ -278,9 +285,13 @@ app.MapPost("/api/sign", async (HttpContext ctx) =>
     if (Math.Abs(body.X - oldX) > 120 || Math.Abs(body.Y - oldY) > 500)
         return Results.Json(new { error = "too far" }, statusCode: 403);
 
-    // 골 근처는 서명 거부 — SSTI로 SECRET 추출해서 직접 위조해야만 도달 가능
+    // 골 영역은 게이트 통과해야 서명 가능 (AI 직접 텔레포트 차단)
     if (body.X >= GOAL_X - 500)
-        return Results.Json(new { error = "forbidden" }, statusCode: 403);
+    {
+        var (gateOk, reason) = ValidateRealPlay(ctx);
+        if (!gateOk)
+            return Results.Json(new { error = "complete the game first", hint = reason }, statusCode: 403);
+    }
 
     var sig = HmacSha256(SECRET_KEY, body.X.ToString());
     return Results.Json(new { sig });
@@ -326,6 +337,14 @@ app.MapPost("/api/move", async (HttpContext ctx) =>
 
     if (body.X >= GOAL_X && body.Y >= GOAL_Y_MIN && body.Y <= GOAL_Y_MAX)
     {
+        // 골 도달 시도 — 게이트 검증 통과해야 flag 발급 (AI 직접 텔레포트 차단)
+        var (gateOk, reason) = ValidateRealPlay(ctx);
+        if (!gateOk)
+            return Results.Json(new { error = "complete the game first", hint = reason }, statusCode: 403);
+
+        var ip = ctx.Connection.RemoteIpAddress?.ToString() ?? "?";
+        var name = ctx.Session.GetString("name") ?? "?";
+        Console.WriteLine($"[FLAG GET!] ip={ip}  name={name}  x={body.X}");
         return Results.Json(new { ok = true, flag = FLAG });
     }
     return Results.Json(new { ok = true });

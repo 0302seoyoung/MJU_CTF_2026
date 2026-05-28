@@ -84,8 +84,9 @@ const TRAP_LAYOUT = {
         [4860, 515], [5560, 515], [6460, 515], [7260, 515], [7860, 515],
     ],
     spike_ground: [
+        // 8000 이후는 비워둠 (골 도달 전 안전 구간)
         [500, 545], [1100, 545], [1700, 545], [2500, 545], [3200, 545], [3800, 545],
-        [4800, 545], [5500, 545], [6400, 545], [7200, 545], [7800, 545], [8200, 545],
+        [4800, 545], [5500, 545], [6400, 545], [7200, 545], [7800, 545],
     ],
     spike_ceiling: [
         [1500, 390], [2900, 390], [4400, 390], [5800, 390], [6800, 390],
@@ -104,7 +105,7 @@ const TRAP_LAYOUT = {
     koopa: [
         [1400, 540], [3500, 540], [5500, 540], [7400, 540],
     ],
-    crazy_goomba: [[1000, 540], [4500, 540]],   // 두 마리, 미친듯이 왕복
+    crazy_goomba: [[1000, 540], [4000, 540]],   // origin 4500→4000으로 (8000 이상 안 침범)
     // 사라지는 바닥 — 일반 바닥처럼 보이지만 밟으면 사라져서 추락
     disappearing_floor: [
         [2450, 580], [4550, 580], [6300, 580],
@@ -114,7 +115,7 @@ const TRAP_LAYOUT = {
         // mystery_block(400/1300/2200/3100/4000/4900/5800/6700/7600)와 겹치지 않게 배치
         [1800, 540], [4500, 540], [7000, 540],
     ],
-    false_goal: [[8500, 510]],
+    false_goal: [],   // 제거 — 진짜 골 도달 방해 X
 };
 
 // ============== Phaser 설정 ==============
@@ -139,6 +140,7 @@ let cursors, wasd, spaceKey;
 let player, platforms, fakePlats, spikes, falseGoal, realGoal, meteorGroup;
 let goombas, qBlocks;
 let disappearingFloor, cannons, cannonBalls;
+let goalFlag, goalPole;
 let scene;
 
 function preload() {
@@ -172,6 +174,7 @@ function preload() {
     this.load.image('koopa_b',    M + 'Koopa_Walk2.png');
     this.load.image('pipe_top',   M + 'PipeTop.png');
     this.load.image('bullet',     M + 'BulletBill.png');
+    this.load.audio('bgm', '/assets/audio/bgm.mp3');
     this.load.image('hill1',      M + 'Hill1.png');
     this.load.image('hill2',      M + 'Hill2.png');
     this.load.image('cloud1',     M + 'Cloud1.png');
@@ -257,8 +260,8 @@ function create() {
         [3800, 500, 80], [4200, 510, 80], [4600, 510, 80],
         [5000, 500, 80], [5300, 510, 80], [5700, 500, 80],
         [6100, 510, 80], [6600, 500, 80], [7000, 510, 80],
-        [7400, 500, 80], [7700, 510, 80], [8100, 500, 80],
-        [8400, 510, 80], [8800, 510, 80],
+        [7400, 500, 80], [7700, 510, 80],
+        // 8000 이후 발판 제거 — 골 영역 청정 구간
     ];
     for (const [x, y, w] of safePlatforms) {
         const r = this.add.tileSprite(x, y, w, 24, 'block_safe');
@@ -319,7 +322,7 @@ function create() {
         c.setData("trapX", x);
         c.setData("trapY", y);
         c.setData("origin", x);
-        c.setData("range", 4000);
+        c.setData("range", 3500);  // 8000+ 안 침범 (origin 4000 → 500~7500)
         c.setData("speed", 280);
         c.body.velocity.x = -280;
     }
@@ -360,8 +363,8 @@ function create() {
 
     // 진짜 골 (마리오 깃대 + 깃발 + 성)
     this.add.image(GOAL_X + 200, 560, 'castle').setOrigin(0.5, 1).setScale(2.5);
-    this.add.tileSprite(GOAL_X, 320, 16, 240, 'flag_pole').setOrigin(0.5, 0);
-    this.add.image(GOAL_X - 18, 330, 'flag_real').setOrigin(0, 0).setScale(2);
+    goalPole = this.add.tileSprite(GOAL_X, 320, 16, 240, 'flag_pole').setOrigin(0.5, 0);
+    goalFlag = this.add.image(GOAL_X - 18, 330, 'flag_real').setOrigin(0, 0).setScale(2);
     const hitZone = this.add.rectangle(GOAL_X, 440, 60, 240, 0x33ff66, 0);
     this.physics.add.existing(hitZone, true);
     realGoal = hitZone;
@@ -419,6 +422,24 @@ function create() {
     player.body.setOffset(0, 0);
     player.body.setCollideWorldBounds(true);
 
+    // 디버그/외부 제어용 window 노출 (콘솔에서 player.x 등 접근 가능)
+    window.player = player;
+    window.serverPos = serverPos;
+
+    // BGM 재생 (루프, 볼륨 30%)
+    const bgm = this.sound.add('bgm', { loop: true, volume: 0.3 });
+    bgm.play();
+    window.bgm = bgm;
+
+    // 음소거 토글
+    const muteBtn = document.getElementById('muteBtn');
+    if (muteBtn) {
+        muteBtn.onclick = () => {
+            if (bgm.isPlaying) { bgm.pause(); muteBtn.textContent = '🔇'; }
+            else { bgm.resume(); muteBtn.textContent = '🔊'; }
+        };
+    }
+
     // 충돌
     this.physics.add.collider(player, platforms);
 
@@ -468,10 +489,11 @@ function create() {
         triggerDeath("false_goal", g.getData("trapX"), g.getData("trapY"));
     });
 
-    // 진짜 골
+    // 진짜 골 — 마리오 1-1 엔딩 시퀀스
     this.physics.add.overlap(player, realGoal, () => {
-        // 좌표를 골 좌표로 보내서 플래그 받기
-        sendMove(GOAL_X, 300);
+        if (gameState.cleared) return;
+        gameState.cleared = true;
+        startGoalSequence();
     });
 
     // 입력
@@ -743,6 +765,117 @@ async function triggerDeath(trapType, tx, ty) {
     deathContent.innerHTML = screenHtml + statsHtml;
     deathOverlay.classList.remove("hidden");
     // 자동 부활 제거 — RESPAWN 버튼 클릭해야 재시작
+}
+
+// ============== 마리오 1-1 엔딩 시퀀스 ==============
+async function startGoalSequence() {
+    // 플레이어 물리 정지
+    player.body.setVelocity(0, 0);
+    player.body.setAllowGravity(false);
+    player.body.moves = false;
+    player.setTexture('cat_idle');
+
+    // 1. 깃발 + 플레이어 슬라이드 다운
+    scene.tweens.add({
+        targets: goalFlag,
+        y: 510,
+        duration: 1200,
+        ease: 'Sine.easeIn'
+    });
+    scene.tweens.add({
+        targets: player,
+        x: GOAL_X - 20,
+        y: 540,
+        duration: 1200,
+        ease: 'Sine.easeIn'
+    });
+
+    await sleep(1400);
+
+    // 2. 마리오 캐슬로 걸어가기
+    player.setFlipX(false);
+    let walkTimer = scene.time.addEvent({
+        delay: 130, loop: true,
+        callback: () => {
+            player.setTexture(player.texture.key === 'cat_walk_a' ? 'cat_walk_b' : 'cat_walk_a');
+        }
+    });
+
+    scene.tweens.add({
+        targets: player,
+        x: GOAL_X + 200,
+        duration: 1800,
+        ease: 'Linear',
+        onComplete: () => {
+            walkTimer.remove();
+            player.setVisible(false);   // 성 안으로 들어감
+        }
+    });
+
+    await sleep(2000);
+
+    // 3. 폭죽
+    spawnFireworks(GOAL_X + 200, 400);
+    scene.time.delayedCall(400, () => spawnFireworks(GOAL_X + 150, 380));
+    scene.time.delayedCall(800, () => spawnFireworks(GOAL_X + 250, 350));
+
+    // 4. 서버 호출 → flag
+    const sigR = await fetch('/api/sign', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({x: GOAL_X, y: 540})
+    });
+    let flag = null, errMsg = null;
+    if (sigR.ok) {
+        const { sig } = await sigR.json();
+        const moveR = await fetch('/api/move', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-Signature': sig},
+            body: JSON.stringify({x: GOAL_X, y: 540})
+        });
+        const data = await moveR.json();
+        if (data.flag) flag = data.flag;
+        else errMsg = data.error || 'unknown';
+    } else {
+        const data = await sigR.json().catch(() => ({error: 'sign refused'}));
+        errMsg = data.error + (data.hint ? ` (${data.hint})` : '');
+    }
+
+    await sleep(2000);   // 폭죽 보고
+
+    // 5. 결과 표시
+    if (flag) {
+        flagBox.textContent = flag;
+        winOverlay.classList.remove("hidden");
+    } else {
+        flagBox.textContent = '🚫 ' + errMsg + '\n\n게이트 통과 부족 — 게임 더 플레이해야 함';
+        winOverlay.querySelector('h1').textContent = 'ALMOST!';
+        winOverlay.classList.remove("hidden");
+    }
+}
+
+function spawnFireworks(cx, cy) {
+    const colors = [0xff3344, 0xffcc00, 0x33ff66, 0x33aaff, 0xff66cc, 0xffffff];
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    for (let i = 0; i < 16; i++) {
+        const angle = (i / 16) * Math.PI * 2;
+        const speed = 120 + Math.random() * 60;
+        const p = scene.add.circle(cx, cy, 5, color);
+        scene.physics.add.existing(p);
+        p.body.setAllowGravity(true);
+        p.body.setGravityY(200);
+        p.body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
+        scene.tweens.add({
+            targets: p,
+            alpha: 0,
+            duration: 1800,
+            onComplete: () => p.destroy()
+        });
+    }
+}
+
+function sleep(ms) {
+    return new Promise(r => setTimeout(r, ms));
 }
 
 function respawn() {

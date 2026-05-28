@@ -14,21 +14,25 @@ function escapeHtml(s) {
     }[c]));
 }
 
-// 랭킹 박스 렌더 (death/win 오버레이용)
-async function renderRanking(elementId) {
+// 랭킹 박스 렌더 (type: 'speed' = 클리어 시간, 'distance' = 도달 거리)
+async function renderRanking(elementId, type = 'speed') {
     const el = document.getElementById(elementId);
     if (!el) return;
     try {
-        const r = await fetch('/api/ranking').then(r => r.json());
-        let html = `<div class="rank-title">🏆 TOP 10 🏆</div>`;
+        const endpoint = type === 'distance' ? '/api/ranking_distance' : '/api/ranking';
+        const r = await fetch(endpoint).then(r => r.json());
+        const title = type === 'distance' ? '🏃 DISTANCE TOP 10 🏃' : '🏆 SPEED TOP 10 🏆';
+        const emptyMsg = type === 'distance' ? 'no players yet — be the first!' : 'no clears yet — be the first!';
+        let html = `<div class="rank-title">${title}</div>`;
         if (!r.length) {
-            html += `<div class="empty">no clears yet — be the first!</div>`;
+            html += `<div class="empty">${emptyMsg}</div>`;
         } else {
             for (const e of r) {
+                const val = type === 'distance' ? `${e.distance}px` : `${e.time}s`;
                 html += `<div class="rank-row">
                     <span class="rank-num">#${e.rank}</span>
                     <span class="rank-name">${escapeHtml(e.name)}</span>
-                    <span class="rank-time">${e.time}s</span>
+                    <span class="rank-time">${val}</span>
                 </div>`;
             }
         }
@@ -750,7 +754,7 @@ async function sendMove(x, y) {
             if (window.clearBgm) window.clearBgm.play();
             flagBox.textContent = data.flag || data.flag_part1;
             winOverlay.classList.remove("hidden");
-            renderRanking('winRanking');
+            renderRanking('winRanking', 'speed');
         }
     } catch (e) { /* network blip */ }
     finally { sendMovePending = false; }
@@ -830,7 +834,7 @@ async function triggerDeath(trapType, tx, ty) {
 
     deathContent.innerHTML = screenHtml + statsHtml;
     deathOverlay.classList.remove("hidden");
-    renderRanking('deathRanking');
+    renderRanking('deathRanking', 'distance');
     // 자동 부활 제거 — RESPAWN 버튼 클릭해야 재시작
 }
 

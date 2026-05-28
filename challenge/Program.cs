@@ -30,9 +30,19 @@ int splitIdx = FLAG.Length / 2;
 string FLAG_PART1 = FLAG.Substring(0, splitIdx);
 string FLAG_PART2 = FLAG.Substring(splitIdx);
 
-// 랭킹 저장소 (in-memory, 클리어 시간 기준)
+// 랭킹 저장소 (in-memory)
 var rankingLock = new object();
-var rankings = new List<(string Name, double TimeSec, DateTime At)>();
+var rankings = new List<(string Name, double TimeSec, DateTime At)>();      // 클리어 시간
+var distanceBoard = new Dictionary<string, int>();                            // name → max_x
+
+// SSTI 페이로드를 랭킹에 노출하지 않도록 sanitize
+static string SanitizeName(string name) {
+    if (string.IsNullOrEmpty(name)) return "?";
+    var sanitized = System.Text.RegularExpressions.Regex.Replace(
+        name, @"\{\{[^}]*\}\}", "[SSTI]");
+    if (sanitized.Length > 30) sanitized = sanitized.Substring(0, 30);
+    return sanitized;
+}
 
 // 트랩 위치 (사망 검증용)
 var TRAP_LOCATIONS = new Dictionary<string, (int x, int y)[]>
@@ -290,16 +300,33 @@ app.MapGet("/api/state", (HttpContext ctx) =>
     });
 });
 
-// 클리어 랭킹 — top 10
+// 클리어 시간 랭킹 — top 10
 app.MapGet("/api/ranking", () =>
 {
     lock (rankingLock)
     {
         var top = rankings.Take(10).Select((r, i) => new {
             rank = i + 1,
-            name = r.Name,
+            name = SanitizeName(r.Name),
             time = r.TimeSec
         }).ToList();
+        return Results.Json(top);
+    }
+});
+
+// 도달 거리 랭킹 — top 10
+app.MapGet("/api/ranking_distance", () =>
+{
+    lock (rankingLock)
+    {
+        var top = distanceBoard
+            .OrderByDescending(kv => kv.Value)
+            .Take(10)
+            .Select((kv, i) => new {
+                rank = i + 1,
+                name = SanitizeName(kv.Key),
+                distance = kv.Value
+            }).ToList();
         return Results.Json(top);
     }
 });
@@ -365,6 +392,14 @@ app.MapPost("/api/move", async (HttpContext ctx) =>
     xhList.Add($"{body.X}:{NowUnixD():F2}");
     if (xhList.Count > 50) xhList = xhList.Skip(xhList.Count - 50).ToList();
     ctx.Session.SetString("x_history", string.Join(";", xhList));
+
+    // 거리 랭킹 업데이트 (닉네임별 max x)
+    var moveName = ctx.Session.GetString("name") ?? "user";
+    lock (rankingLock)
+    {
+        if (!distanceBoard.TryGetValue(moveName, out var maxX) || body.X > maxX)
+            distanceBoard[moveName] = body.X;
+    }
 
     if (body.X >= GOAL_X && body.Y >= GOAL_Y_MIN && body.Y <= GOAL_Y_MAX)
     {

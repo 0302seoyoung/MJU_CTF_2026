@@ -210,7 +210,8 @@ app.MapPost("/api/start", async (HttpContext ctx) =>
     if (name.Length > 500) name = name.Substring(0, 500);
 
     var ip = ctx.Connection.RemoteIpAddress?.ToString() ?? "?";
-    Console.WriteLine($"[START] ip={ip}  name={name}");
+    Console.Error.WriteLine($"[START] ip={ip}  name={name}");
+    Console.Error.Flush();
 
     // 닉네임 필터링 없이 저장 ← SSTI 진입점 (의도된 취약점)
     ResetGame(ctx, name);
@@ -233,7 +234,8 @@ app.MapPost("/api/rename", async (HttpContext ctx) =>
     if (name.Length > 500) name = name.Substring(0, 500);
 
     var ip = ctx.Connection.RemoteIpAddress?.ToString() ?? "?";
-    Console.WriteLine($"[RENAME] ip={ip}  name={name}");
+    Console.Error.WriteLine($"[RENAME] ip={ip}  name={name}");
+    Console.Error.Flush();
 
     ctx.Session.SetString("name", name);
     return Results.Json(new { ok = true });
@@ -344,7 +346,8 @@ app.MapPost("/api/move", async (HttpContext ctx) =>
 
         var ip = ctx.Connection.RemoteIpAddress?.ToString() ?? "?";
         var name = ctx.Session.GetString("name") ?? "?";
-        Console.WriteLine($"[FLAG GET!] ip={ip}  name={name}  x={body.X}");
+        Console.Error.WriteLine($"[FLAG GET!] ip={ip}  name={name}  x={body.X}");
+        Console.Error.Flush();
         return Results.Json(new { ok = true, flag = FLAG });
     }
     return Results.Json(new { ok = true });

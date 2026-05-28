@@ -197,6 +197,35 @@ img { image-rendering: pixelated; image-rendering: crisp-edges; }
 .death-stats .stat-line.ok    { color: #00ff66; }   /* 통과 — 녹색 */
 .death-stats .stat-line.fail  { color: #ff4455; }   /* 미통과 — 빨강 */
 .death-stats .name-line       { color: #ffcc00; }   /* 닉네임 — 노랑 */
+
+.rank-box {
+    margin-top: 16px;
+    padding: 12px 18px;
+    background: #000;
+    border: 2px solid #ffcc00;
+    color: #ffcc00;
+    font-family: 'Press Start 2P', 'Courier New', monospace;
+    font-size: 10px;
+    line-height: 1.8;
+    min-width: 380px;
+    text-align: left;
+}
+.rank-box .rank-title {
+    color: #fff;
+    font-size: 12px;
+    margin-bottom: 8px;
+    text-align: center;
+    letter-spacing: 2px;
+}
+.rank-box .rank-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 2px 0;
+}
+.rank-box .rank-row .rank-num { width: 30px; }
+.rank-box .rank-row .rank-name { flex: 1; padding: 0 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rank-box .rank-row .rank-time { color: #00ff66; }
+.rank-box .empty { text-align: center; color: #888; }
 #deathOverlay p { font-size: 11px; }
 #respawnBtn, #winOverlay button {
     padding: 14px 28px;

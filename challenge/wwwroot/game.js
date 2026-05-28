@@ -14,6 +14,28 @@ function escapeHtml(s) {
     }[c]));
 }
 
+// 랭킹 박스 렌더 (death/win 오버레이용)
+async function renderRanking(elementId) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    try {
+        const r = await fetch('/api/ranking').then(r => r.json());
+        let html = `<div class="rank-title">🏆 TOP 10 🏆</div>`;
+        if (!r.length) {
+            html += `<div class="empty">no clears yet — be the first!</div>`;
+        } else {
+            for (const e of r) {
+                html += `<div class="rank-row">
+                    <span class="rank-num">#${e.rank}</span>
+                    <span class="rank-name">${escapeHtml(e.name)}</span>
+                    <span class="rank-time">${e.time}s</span>
+                </div>`;
+            }
+        }
+        el.innerHTML = html;
+    } catch (e) {}
+}
+
 let serverPos = { x: 50, y: 500 };
 let lastSyncTime = 0;
 let sendMovePending = false;     // race condition 방지 (병렬 호출 막음)
@@ -35,10 +57,7 @@ const hudName = document.getElementById("hudName");
 
 startBtn.onclick = async () => {
     const nameInput = document.getElementById("nameInput");
-    const adminInputs = document.getElementById("adminInputs");
-    // admin일 때만 nameInput이 visible → 그때만 그 값 사용
-    const useInput = nameInput && adminInputs && !adminInputs.classList.contains("hidden");
-    const name = useInput ? (nameInput.value || "user") : "user";
+    const name = (nameInput && nameInput.value) || "user";
     const r = await fetch("/api/start", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
@@ -80,33 +99,6 @@ renameInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") doRename();
 });
 
-// admin 권한 감지 + 관련 UI 토글 (rename 패널, HUD name, 시작화면 nameInput)
-const renamePanel = document.getElementById("renamePanel");
-const hudNameWrap = document.getElementById("hudNameWrap");
-function checkAdminAndTogglePanel() {
-    let role = "user";
-    try {
-        const m = document.cookie.match(/prefs=([^;]+)/);
-        if (m) {
-            const decoded = atob(decodeURIComponent(m[1]));
-            const obj = JSON.parse(decoded);
-            role = obj.role || "user";
-        }
-    } catch (e) {}
-    const adminInputs = document.getElementById("adminInputs");
-    if (role === "admin") {
-        renamePanel.classList.remove("hidden");
-        if (hudNameWrap) hudNameWrap.style.display = "";
-        if (adminInputs) adminInputs.classList.remove("hidden");
-    } else {
-        renamePanel.classList.add("hidden");
-        if (hudNameWrap) hudNameWrap.style.display = "none";
-        if (adminInputs) adminInputs.classList.add("hidden");
-    }
-}
-// 초기 1회 + 2초마다 폴링 (쿠키 변조 후 자동 반영)
-checkAdminAndTogglePanel();
-setInterval(checkAdminAndTogglePanel, 2000);
 
 // ============== Trap layout (클라이언트 표시용; 서버에도 동일) ==============
 const TRAP_LAYOUT = {
@@ -758,6 +750,7 @@ async function sendMove(x, y) {
             if (window.clearBgm) window.clearBgm.play();
             flagBox.textContent = data.flag || data.flag_part1;
             winOverlay.classList.remove("hidden");
+            renderRanking('winRanking');
         }
     } catch (e) { /* network blip */ }
     finally { sendMovePending = false; }
@@ -837,6 +830,7 @@ async function triggerDeath(trapType, tx, ty) {
 
     deathContent.innerHTML = screenHtml + statsHtml;
     deathOverlay.classList.remove("hidden");
+    renderRanking('deathRanking');
     // 자동 부활 제거 — RESPAWN 버튼 클릭해야 재시작
 }
 
@@ -933,10 +927,12 @@ async function startGoalSequence() {
     if (flag) {
         flagBox.textContent = flag;
         winOverlay.classList.remove("hidden");
+        renderRanking('winRanking');
     } else {
         flagBox.textContent = '🚫 ' + errMsg + '\n\n게이트 통과 부족 — 게임 더 플레이해야 함';
         winOverlay.querySelector('h1').textContent = 'ALMOST!';
         winOverlay.classList.remove("hidden");
+        renderRanking('winRanking');
     }
 }
 

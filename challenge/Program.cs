@@ -30,6 +30,10 @@ int splitIdx = FLAG.Length / 2;
 string FLAG_PART1 = FLAG.Substring(0, splitIdx);
 string FLAG_PART2 = FLAG.Substring(splitIdx);
 
+// 랭킹 저장소 (in-memory, 클리어 시간 기준)
+var rankingLock = new object();
+var rankings = new List<(string Name, double TimeSec, DateTime At)>();
+
 // 트랩 위치 (사망 검증용)
 var TRAP_LOCATIONS = new Dictionary<string, (int x, int y)[]>
 {
@@ -286,6 +290,20 @@ app.MapGet("/api/state", (HttpContext ctx) =>
     });
 });
 
+// 클리어 랭킹 — top 10
+app.MapGet("/api/ranking", () =>
+{
+    lock (rankingLock)
+    {
+        var top = rankings.Take(10).Select((r, i) => new {
+            rank = i + 1,
+            name = r.Name,
+            time = r.TimeSec
+        }).ToList();
+        return Results.Json(top);
+    }
+});
+
 app.MapPost("/api/sign", async (HttpContext ctx) =>
 {
     EnsureGame(ctx);
@@ -359,6 +377,21 @@ app.MapPost("/api/move", async (HttpContext ctx) =>
         var name = ctx.Session.GetString("name") ?? "?";
         Console.Error.WriteLine($"[FLAG PART1] ip={ip}  name={name}  x={body.X}");
         Console.Error.Flush();
+
+        // 랭킹 기록 — 클리어 시간 = session_start ~ 골 도달
+        var startRaw = ctx.Session.GetString("session_start");
+        if (startRaw != null)
+        {
+            var start = double.Parse(startRaw, CultureInfo.InvariantCulture);
+            var timeSec = Math.Round(NowUnixD() - start, 2);
+            lock (rankingLock)
+            {
+                rankings.Add((name, timeSec, DateTime.UtcNow));
+                // 시간 기준 오름차순 정렬, 상위 100개만 유지
+                rankings = rankings.OrderBy(r => r.TimeSec).Take(100).ToList();
+            }
+        }
+
         return Results.Json(new {
             ok = true,
             flag_part1 = FLAG_PART1

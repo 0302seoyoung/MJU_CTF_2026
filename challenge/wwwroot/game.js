@@ -427,10 +427,31 @@ function create() {
     window.player = player;
     window.serverPos = serverPos;
 
-    // BGM 재생 (루프, 슬라이더 초기값 30%)
+    // BGM 재생 (브라우저 자동재생 정책 우회: AudioContext 명시 unlock)
     const bgm = this.sound.add('bgm', { loop: true, volume: 0.3 });
     const clearBgm = this.sound.add('clear', { loop: false, volume: 0.3 });
-    bgm.play();
+
+    const tryPlayBgm = () => {
+        try {
+            // Phaser WebAudio context resume
+            if (this.sound.context && this.sound.context.state === 'suspended') {
+                this.sound.context.resume();
+            }
+            if (!bgm.isPlaying) bgm.play();
+        } catch (e) { console.warn('bgm play err:', e); }
+    };
+    tryPlayBgm();
+    // 만약 첫 시도 실패 시, 다음 클릭/키 입력에 다시 시도
+    const unlockListener = () => {
+        tryPlayBgm();
+        if (bgm.isPlaying) {
+            window.removeEventListener('click', unlockListener);
+            window.removeEventListener('keydown', unlockListener);
+        }
+    };
+    window.addEventListener('click', unlockListener);
+    window.addEventListener('keydown', unlockListener);
+
     window.bgm = bgm;
     window.clearBgm = clearBgm;
 

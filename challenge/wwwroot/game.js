@@ -175,6 +175,7 @@ function preload() {
     this.load.image('pipe_top',   M + 'PipeTop.png');
     this.load.image('bullet',     M + 'BulletBill.png');
     this.load.audio('bgm', '/assets/audio/bgm.mp3');
+    this.load.audio('clear', '/assets/audio/clear.mp3');
     this.load.image('hill1',      M + 'Hill1.png');
     this.load.image('hill2',      M + 'Hill2.png');
     this.load.image('cloud1',     M + 'Cloud1.png');
@@ -426,17 +427,31 @@ function create() {
     window.player = player;
     window.serverPos = serverPos;
 
-    // BGM 재생 (루프, 볼륨 30%)
+    // BGM 재생 (루프, 슬라이더 초기값 30%)
     const bgm = this.sound.add('bgm', { loop: true, volume: 0.3 });
+    const clearBgm = this.sound.add('clear', { loop: false, volume: 0.3 });
     bgm.play();
     window.bgm = bgm;
+    window.clearBgm = clearBgm;
 
     // 음소거 토글
     const muteBtn = document.getElementById('muteBtn');
+    let muted = false;
     if (muteBtn) {
         muteBtn.onclick = () => {
-            if (bgm.isPlaying) { bgm.pause(); muteBtn.textContent = '🔇'; }
-            else { bgm.resume(); muteBtn.textContent = '🔊'; }
+            muted = !muted;
+            this.sound.mute = muted;
+            muteBtn.textContent = muted ? '🔇' : '🔊';
+        };
+    }
+
+    // 볼륨 슬라이더 — 모든 사운드 동시 조절
+    const volSlider = document.getElementById('volumeSlider');
+    if (volSlider) {
+        volSlider.oninput = () => {
+            const v = parseInt(volSlider.value) / 100;
+            bgm.setVolume(v);
+            clearBgm.setVolume(v);
         };
     }
 
@@ -683,6 +698,9 @@ async function sendMove(x, y) {
         serverPos.y = ty;
         if (data.flag) {
             gameState.cleared = true;
+            // BGM 전환: 메인 끄고 클리어 테마 (SSTI/HMAC 풀이 시)
+            if (window.bgm) window.bgm.stop();
+            if (window.clearBgm) window.clearBgm.play();
             flagBox.textContent = data.flag;
             winOverlay.classList.remove("hidden");
         }
@@ -769,6 +787,10 @@ async function triggerDeath(trapType, tx, ty) {
 
 // ============== 마리오 1-1 엔딩 시퀀스 ==============
 async function startGoalSequence() {
+    // BGM 전환: 메인 끄고 클리어 테마 재생
+    if (window.bgm) window.bgm.stop();
+    if (window.clearBgm) window.clearBgm.play();
+
     // 플레이어 물리 정지
     player.body.setVelocity(0, 0);
     player.body.setAllowGravity(false);

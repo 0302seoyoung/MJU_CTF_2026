@@ -25,6 +25,11 @@ try {
            ?? "FLAG{Cu_SUP3R_MJS3C_zz}";
 }
 
+// 플래그를 2등분: 골 도달 시 PART1, SSTI로 PART2 추출 → 합쳐야 완성
+int splitIdx = FLAG.Length / 2;
+string FLAG_PART1 = FLAG.Substring(0, splitIdx);
+string FLAG_PART2 = FLAG.Substring(splitIdx);
+
 // 트랩 위치 (사망 검증용)
 var TRAP_LOCATIONS = new Dictionary<string, (int x, int y)[]>
 {
@@ -346,9 +351,13 @@ app.MapPost("/api/move", async (HttpContext ctx) =>
 
         var ip = ctx.Connection.RemoteIpAddress?.ToString() ?? "?";
         var name = ctx.Session.GetString("name") ?? "?";
-        Console.Error.WriteLine($"[FLAG GET!] ip={ip}  name={name}  x={body.X}");
+        Console.Error.WriteLine($"[FLAG PART1] ip={ip}  name={name}  x={body.X}");
         Console.Error.Flush();
-        return Results.Json(new { ok = true, flag = FLAG });
+        return Results.Json(new {
+            ok = true,
+            flag_part1 = FLAG_PART1,
+            hint = "this is only half. find the second half elsewhere."
+        });
     }
     return Results.Json(new { ok = true });
 });
@@ -443,7 +452,7 @@ app.MapGet("/api/death-screen", (HttpContext ctx) =>
     var template = Template.Parse(templateText);
     var result = template.Render(new
     {
-        server = new ServerInfo(SECRET_KEY)
+        server = new ServerInfo(SECRET_KEY, FLAG_PART2)
     });
 
     return Results.Content(result, "text/html");
@@ -466,12 +475,19 @@ record MoveRequest(
 record DeathRequest([property: JsonPropertyName("trap")] string? Trap);
 
 // SSTI로 노출되는 객체.
-// Scriban은 .NET 프로퍼티를 snake_case로 노출함 → server.secret_key 로 접근됨.
+// Scriban은 .NET 프로퍼티를 snake_case로 노출함
+//   server.secret_key  → HMAC 시크릿
+//   server.flag_part2  → 플래그 후반부 (전반부는 골 도달 시)
 public class ServerInfo
 {
     private readonly string _secret;
-    public ServerInfo(string secret) { _secret = secret; }
+    private readonly string _flagPart2;
+    public ServerInfo(string secret, string flagPart2) {
+        _secret = secret;
+        _flagPart2 = flagPart2;
+    }
 
     public string Version => "1.0.0";
     public string SecretKey => _secret;
+    public string FlagPart2 => _flagPart2;
 }

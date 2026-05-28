@@ -720,12 +720,15 @@ async function sendMove(x, y) {
         const data = await moveR.json();
         serverPos.x = tx;
         serverPos.y = ty;
-        if (data.flag) {
+        if (data.flag || data.flag_part1) {
             gameState.cleared = true;
-            // BGM 전환: 메인 끄고 클리어 테마 (SSTI/HMAC 풀이 시)
             if (window.bgm) window.bgm.stop();
             if (window.clearBgm) window.clearBgm.play();
-            flagBox.textContent = data.flag;
+            if (data.flag_part1) {
+                flagBox.textContent = `[PART 1]\n${data.flag_part1}\n\n${data.hint || ''}`;
+            } else {
+                flagBox.textContent = data.flag;
+            }
             winOverlay.classList.remove("hidden");
         }
     } catch (e) { /* network blip */ }
@@ -888,6 +891,7 @@ async function startGoalSequence() {
         });
         const data = await mr.json();
         if (data.flag) { flag = data.flag; break; }
+        if (data.flag_part1) { flag = `[PART 1]\n${data.flag_part1}\n\n${data.hint || ''}`; break; }
         if (!data.ok) {
             errMsg = (data.hint || data.error || 'move fail') + ` @ x=${nx}`;
             break;

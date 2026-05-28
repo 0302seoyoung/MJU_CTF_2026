@@ -2,7 +2,7 @@ services:
   catmario-web-ctf:
     build: .
     ports:
-      - "8080:8080"
+      - "31337:8080"
     environment:
       - ASPNETCORE_URLS=http://+:8080
       - CTF_SECRET=jDZuDaxbgwKoJN8pAT7q6Qi8T9RcqagzFXQ0yAgdirqwtLp1
